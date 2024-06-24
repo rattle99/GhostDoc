@@ -1,0 +1,5 @@
+Flask==3.0.3
+requests==2.32.3
+tika==2.6.0
+presidio-analyzer==2.2.354
+Faker==25.9.1
