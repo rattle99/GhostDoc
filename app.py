@@ -13,7 +13,6 @@ app = Flask(__name__)
 mapDict = {}
 UPLOAD_FOLDER = './uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-final_result_set = []
 
 def extract_text_using_tika(file_path):
     parsed = tika_parser.from_file(file_path)
@@ -89,12 +88,9 @@ def transform_chunks(result,chunk):
             mapDict[replaced_text]=  res
 
         chunk = chunk[:start_index] + str(res) + chunk[end_index+1:]
-
-        
     return chunk
 
 def export_to_original(modified_text, original_file_path):
-    
     
     original_ext = original_file_path.rsplit('.', 1)[-1].lower()
     temp_file = secure_filename('modified_' + os.path.basename(original_file_path))
@@ -133,14 +129,12 @@ def upload_file():
         modified_chunks_list=[]
         
         for chunk in chunks:
-        
             model1_output = call_pretrained_model(chunk)
             model2_output = call_precedio_model(chunk)
             result_set=model_outputs(model1_output,model2_output)
             modified_chunks_list.append(transform_chunks(result_set,chunk))
         modified_content = ' '.join(modified_chunks_list)
         temp_file_path,mime_type=export_to_original(modified_content,filepath)
-        print(mapDict)
         return send_file(temp_file_path,mimetype=mime_type,as_attachment=True)
 
 if __name__ == '__main__':
