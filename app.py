@@ -15,6 +15,9 @@ mapDict = {}
 UPLOAD_FOLDER = './uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
+PRESIDIO_ENTITIES = ['PERSON', 'PHONE_NUMBER', 'CREDIT_CARD', 'US_SSN']
+MODEL_EXCLUSION_LIST = {'FIRSTNAME', 'LASTNAME', 'MIDDLENAME', 'ACCOUNTNAME', 'USERNAME'
+                        'PHONENUMBER', 'SSN', 'CREDITCARDNUMBER'}
 
 def extract_text_using_tika(file_path):
     parsed_file = tika_parser.from_file(file_path)
@@ -48,12 +51,22 @@ def pretrained_model(current_chunk):
     payload = {'text': current_chunk}
     result = requests.post(URL, json=payload, verify=False)
     pretrained_model_response = result.json()
+    
+    entities = pretrained_model_response['response']
+    filtered_entities = list()
+    for entity in entities:
+        if entity['entity_group'] not in MODEL_EXCLUSION_LIST:
+            filtered_entities.append(entity)
+
+    pretrained_model_response = {"response":filtered_entities}
     return pretrained_model_response
 
 
 def presidio_model(current_chunk):
     
-    analyzer_results = analyzer.analyze(text=current_chunk, language='en')
+    analyzer_results = analyzer.analyze(text=current_chunk, 
+                                        entities=PRESIDIO_ENTITIES,
+                                        language='en')
     chunk_result = []
     
     for result in analyzer_results:
