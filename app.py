@@ -20,21 +20,24 @@ def extract_text_using_tika(file_path):
 
 
 def chunk_text_into_400_words(text):
-    words = text.split()
+    words = text.split(".")
     chunks = []
-    current_chunk = []
+    current_chunk = ''
     word_count = 0
 
     for word in words:
-        current_chunk.append(word)
-        word_count += 1
-        if word_count >= 50:
-            chunks.append(" ".join(current_chunk))
-            current_chunk = []
+        current_chunk += word + '.'
+       # breakpoint()
+        word_count += len(word.split(' '))
+        if word_count >= 350:
+            chunks.append(current_chunk)
+            current_chunk = ' '
             word_count = 0
     
-    if current_chunk:
-        chunks.append(" ".join(current_chunk))
+    # if current_chunk:
+    #     chunks.append(" ".join(current_chunk))
+    chunks.append(current_chunk)
+   # breakpoint()
     return chunks
 
 
@@ -59,11 +62,10 @@ def call_precedio_model(text_chunks):
     presidioResponse = {"response" : results}
     return presidioResponse
 
-def model_outputs(output1,output2):
+def model_outputs(output2):
     result_set=[]
-    for entity1 in output1["response"]:
-        if entity1['entity_group']!='FIRSTNAME' and entity1['entity_group']!='LASTNAME' and entity1['entity_group']!='COMPANYNAME':
-            result_set.append(entity1)
+    # for entity1 in output1["response"]:
+    #     result_set.append(entity1)
 
     for entity2 in output2["response"]:
         result_set.append(entity2)
@@ -73,12 +75,15 @@ def model_outputs(output1,output2):
 def transform_chunks(result,chunk):
     module_name = "CustomFaker"
     module = importlib.import_module(module_name)
-    
+    temp_str=''
+    isFirstRun = True
+    prev_index = None
     for json_object in result:
         start_index= json_object['start']
         end_index=json_object['end']
+        
         method_name = json_object['entity_group']
-        replaced_text = chunk[start_index:end_index+1]
+        replaced_text = chunk[start_index:end_index]
         res=''
         if replaced_text in mapDict:
             res = mapDict[replaced_text]
@@ -86,9 +91,14 @@ def transform_chunks(result,chunk):
             method = getattr(module, method_name)
             res =method()
             mapDict[replaced_text]=  res
-
-        chunk = chunk[:start_index] + str(res) + chunk[end_index+1:]
-    return chunk
+        if(isFirstRun==True):
+            temp_str = chunk[:start_index] +  str(res) 
+            isFirstRun=False
+        else:
+            temp_str = temp_str + chunk[prev_index+1:start_index] + str(res) 
+        prev_index=end_index
+    temp_str = temp_str + chunk[prev_index+1:]
+    return temp_str
 
 def export_to_original(modified_text, original_file_path):
     
@@ -127,11 +137,11 @@ def upload_file():
         chunks = chunk_text_into_400_words(text)
         final_result_set=[]
         modified_chunks_list=[]
-        
+        print(chunks)
         for chunk in chunks:
             model1_output = call_pretrained_model(chunk)
             model2_output = call_precedio_model(chunk)
-            result_set=model_outputs(model1_output,model2_output)
+            result_set=model_outputs(model1_output)
             modified_chunks_list.append(transform_chunks(result_set,chunk))
         modified_content = ' '.join(modified_chunks_list)
         temp_file_path,mime_type=export_to_original(modified_content,filepath)
