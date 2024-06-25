@@ -17,7 +17,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 PRESIDIO_ENTITIES = ['PERSON', 'PHONE_NUMBER', 'CREDIT_CARD', 'US_SSN']
 MODEL_EXCLUSION_LIST = {'FIRSTNAME', 'LASTNAME', 'MIDDLENAME', 'ACCOUNTNAME', 'USERNAME'
-                        'PHONENUMBER', 'SSN', 'CREDITCARDNUMBER'}
+                        'PHONENUMBER', 'SSN', 'CREDITCARDNUMBER', 'COMPANYNAME', 'PREFIX'}
 
 def extract_text_using_tika(file_path):
     parsed_file = tika_parser.from_file(file_path)
@@ -42,6 +42,7 @@ def split_text_into_chunks(text):
     
     if(len(current_chunk)!=0):
         chunk_list.append(current_chunk)
+
     return chunk_list
 
 
@@ -87,6 +88,8 @@ def combine_model_results(pretrained_result,presidio_result):
     
     for entity in presidio_result["response"]:
         result_set.append(entity)
+
+    result_set = sorted(result_set, key=lambda x:x['start'])
     
     return result_set
 
@@ -118,10 +121,14 @@ def transform_chunk(model_results,chunk):
             modified_chunk = chunk[:start_index] +  str(res) 
             isFirstRun=False
         else:
-            modified_chunk = modified_chunk + chunk[prev_index+1:start_index] + str(res) 
+            space=''
+            if(prev_index==start_index):
+                space=' '
+            modified_chunk = modified_chunk + space + chunk[prev_index:start_index] + str(res) 
         prev_index=end_index
 
-    modified_chunk = modified_chunk + chunk[prev_index+1:]
+    modified_chunk = modified_chunk + chunk[prev_index:] + ' '
+
     return modified_chunk
 
 def export_to_original(modified_text, original_file_path):
@@ -179,11 +186,11 @@ def upload_file():
             modified_chunk= transform_chunk(result_set,chunk)
             modified_chunks_list.append(modified_chunk)
         
-        
         modified_content = ' '.join(modified_chunks_list)
         
         for key in mapDict:
-            modified_content = re.sub(key, mapDict[key], modified_content)
+            matchSequence = f'"(?<=[^a-zA-Z])({key})(?=[^a-zA-Z])"gm'
+            modified_content = re.sub(matchSequence, mapDict[key], modified_content)
         
         temp_file_path,mime_type=export_to_original(modified_content,filepath)
         
