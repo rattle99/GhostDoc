@@ -1,8 +1,9 @@
 from flask import Flask, request, jsonify, render_template
 from werkzeug.utils import secure_filename
 import os
+import re
 from tika import parser as tika_parser
-import requests  # Add for making HTTP requests
+import requests  
 from presidio_analyzer import AnalyzerEngine
 analyzer = AnalyzerEngine()
 import importlib
@@ -14,97 +15,108 @@ mapDict = {}
 UPLOAD_FOLDER = './uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
+
 def extract_text_using_tika(file_path):
-    parsed = tika_parser.from_file(file_path)
-    return parsed.get('content', '')
+    parsed_file = tika_parser.from_file(file_path)
+    return parsed_file.get('content', '')
 
 
-def chunk_text_into_400_words(text):
-    words = text.split(".")
-    chunks = []
+def split_text_into_chunks(text):
+    
+    sentences = text.split(".")
+    
+    chunk_list = []
     current_chunk = ''
     word_count = 0
 
-    for word in words:
-        current_chunk += word + '.'
-       # breakpoint()
-        word_count += len(word.split(' '))
+    for sentence in sentences:
+        current_chunk += sentence + '.'
+        word_count += len(sentence.split(' '))
         if word_count >= 350:
-            chunks.append(current_chunk)
-            current_chunk = ' '
+            chunk_list.append(current_chunk)
+            current_chunk = ''
             word_count = 0
     
-    # if current_chunk:
-    #     chunks.append(" ".join(current_chunk))
-    chunks.append(current_chunk)
-   # breakpoint()
-    return chunks
+    if(len(current_chunk)!=0):
+        chunk_list.append(current_chunk)
+    return chunk_list
 
 
-def call_pretrained_model(text_chunks):
-
+def pretrained_model(current_chunk):
+    
     URL = 'http://localhost:5000/pii'
-    payload = {'text': text_chunks}
+    payload = {'text': current_chunk}
     result = requests.post(URL, json=payload, verify=False)
-    modelResponse = result.json()
-    return modelResponse
+    pretrained_model_response = result.json()
+    return pretrained_model_response
 
 
-def call_precedio_model(text_chunks):
-    analyzer_results = analyzer.analyze(text=text_chunks, language='en')
-    results = list()
+def presidio_model(current_chunk):
+    
+    analyzer_results = analyzer.analyze(text=current_chunk, language='en')
+    chunk_result = []
+    
     for result in analyzer_results:
         result = result.to_dict()
         required_result = {'end' : result['end'], 'entity_group' : result['entity_type'],
                             'score' : result['score'], 'start' : result['start']}
-        results.append(required_result)
+        chunk_result.append(required_result)
 
-    presidioResponse = {"response" : results}
-    return presidioResponse
+    presidio_model_response = {"response" : chunk_result}
+    return presidio_model_response
 
-def model_outputs(output1,output2):
+
+def combine_model_results(pretrained_result,presidio_result):
     result_set=[]
-    for entity1 in output1["response"]:
-        result_set.append(entity1)
-
-    for entity2 in output2["response"]:
-        result_set.append(entity2)
-
+    
+    for entity in pretrained_result["response"]:
+        result_set.append(entity)
+    
+    for entity in presidio_result["response"]:
+        result_set.append(entity)
+    
     return result_set
 
-def transform_chunks(result,chunk):
+def transform_chunk(model_results,chunk):
+    
     module_name = "CustomFaker"
     module = importlib.import_module(module_name)
-    temp_str=''
+    modified_chunk=''
+    
     isFirstRun = True
     prev_index = None
-    for json_object in result:
+    
+    for json_object in model_results:
+        
         start_index= json_object['start']
         end_index=json_object['end']
-        
         method_name = json_object['entity_group']
-        replaced_text = chunk[start_index:end_index+1]
+        replaced_text = chunk[start_index:end_index]
         res=''
+
         if replaced_text in mapDict:
             res = mapDict[replaced_text]
         else:
             method = getattr(module, method_name)
             res =method()
-            mapDict[replaced_text]=  res
+            mapDict[str(replaced_text)]=  str(res)
+        
         if(isFirstRun==True):
-            temp_str = chunk[:start_index] +  str(res) 
+            modified_chunk = chunk[:start_index] +  str(res) 
             isFirstRun=False
         else:
-            temp_str = temp_str + chunk[prev_index+1:start_index] + str(res) 
+            modified_chunk = modified_chunk + chunk[prev_index+1:start_index] + str(res) 
         prev_index=end_index
-    temp_str = temp_str + chunk[prev_index+1:]
-    return temp_str
+
+    modified_chunk = modified_chunk + chunk[prev_index+1:]
+    return modified_chunk
 
 def export_to_original(modified_text, original_file_path):
     
     original_ext = original_file_path.rsplit('.', 1)[-1].lower()
     temp_file = secure_filename('modified_' + os.path.basename(original_file_path))
     temp_file_path = os.path.join(app.config['UPLOAD_FOLDER'], temp_file)
+    
     with open(temp_file_path, 'w', encoding='utf-8') as f:
         f.write(modified_text)
     if original_ext == 'pdf':
@@ -116,36 +128,56 @@ def export_to_original(modified_text, original_file_path):
     return temp_file_path,mime_type
     
 
+def get_file():
+    
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part'})
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'})
+
+    filename = secure_filename(file.filename)
+    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    file.save(filepath)
+    return filepath    
+
+def preprocess_file(file_path):
+    text = extract_text_using_tika(file_path)
+    chunks = split_text_into_chunks(text)
+    return chunks
+    
+
 @app.route('/upload', methods=['POST','GET'])
 def upload_file():
 
     if request.method=='GET':
         return render_template('upload.html')
     else:
-        if 'file' not in request.files:
-            return jsonify({'error': 'No file part'})
-
-        file = request.files['file']
-        if file.filename == '':
-            return jsonify({'error': 'No selected file'})
-
-        filename = secure_filename(file.filename)
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(filepath)
-
-        text = extract_text_using_tika(filepath)
-        chunks = chunk_text_into_400_words(text)
-        final_result_set=[]
+        
+        filepath = get_file()
+        chunks = preprocess_file(filepath)
         modified_chunks_list=[]
-        print(chunks)
+        
         for chunk in chunks:
-            model1_output = call_pretrained_model(chunk)
-            model2_output = call_precedio_model(chunk)
-            result_set=model_outputs(model1_output,model2_output)
-            modified_chunks_list.append(transform_chunks(result_set,chunk))
+            pretrained_model_output = pretrained_model(chunk)
+            presidio_model_output = presidio_model(chunk)
+            result_set    = combine_model_results(pretrained_model_output,presidio_model_output)
+            modified_chunk= transform_chunk(result_set,chunk)
+            modified_chunks_list.append(modified_chunk)
+        
+        
         modified_content = ' '.join(modified_chunks_list)
+        
+        for key in mapDict:
+            modified_content = re.sub(key, mapDict[key], modified_content)
+        
         temp_file_path,mime_type=export_to_original(modified_content,filepath)
+        
         return send_file(temp_file_path,mimetype=mime_type,as_attachment=True)
 
+
+
+
 if __name__ == '__main__':
-    app.run(port=5111, debug=True)
+    app.run(port=8080, debug=True)
