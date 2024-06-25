@@ -62,10 +62,10 @@ def call_precedio_model(text_chunks):
     presidioResponse = {"response" : results}
     return presidioResponse
 
-def model_outputs(output2):
+def model_outputs(output1,output2):
     result_set=[]
-    # for entity1 in output1["response"]:
-    #     result_set.append(entity1)
+    for entity1 in output1["response"]:
+        result_set.append(entity1)
 
     for entity2 in output2["response"]:
         result_set.append(entity2)
@@ -83,7 +83,7 @@ def transform_chunks(result,chunk):
         end_index=json_object['end']
         
         method_name = json_object['entity_group']
-        replaced_text = chunk[start_index:end_index]
+        replaced_text = chunk[start_index:end_index+1]
         res=''
         if replaced_text in mapDict:
             res = mapDict[replaced_text]
@@ -141,7 +141,7 @@ def upload_file():
         for chunk in chunks:
             model1_output = call_pretrained_model(chunk)
             model2_output = call_precedio_model(chunk)
-            result_set=model_outputs(model1_output)
+            result_set=model_outputs(model1_output,model2_output)
             modified_chunks_list.append(transform_chunks(result_set,chunk))
         modified_content = ' '.join(modified_chunks_list)
         temp_file_path,mime_type=export_to_original(modified_content,filepath)
