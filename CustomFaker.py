@@ -199,7 +199,7 @@ def PHONENUMBER():
 
 
 def PIN():
-    return fake.random_number(digits=4)
+    return fake.random_number(digits=3)
 
 
 def PREFIX():

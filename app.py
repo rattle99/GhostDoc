@@ -28,6 +28,7 @@ MODEL_EXCLUSION_LIST = {
     "PHONENUMBER",
     "COMPANYNAME",
     "PREFIX",
+    "NEARBYGPSCOORDINATE"
 }
 
 def extract_text_using_tika(file_path):
