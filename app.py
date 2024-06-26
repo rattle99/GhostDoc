@@ -7,6 +7,8 @@ import importlib
 import requests
 import os
 import re
+import CustomFaker
+import numericRegex
 
 app = Flask(__name__)
 analyzer = AnalyzerEngine()
@@ -16,7 +18,7 @@ mapDict = {}
 UPLOAD_FOLDER = "./uploads"
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
-PRESIDIO_ENTITIES = ["PERSON", "PHONE_NUMBER", "CREDIT_CARD", "US_SSN"]
+PRESIDIO_ENTITIES = ["PERSON", "PHONE_NUMBER"]
 MODEL_EXCLUSION_LIST = {
     "FIRSTNAME",
     "LASTNAME",
@@ -24,12 +26,9 @@ MODEL_EXCLUSION_LIST = {
     "ACCOUNTNAME",
     "USERNAME", 
     "PHONENUMBER",
-    "SSN",
-    "CREDITCARDNUMBER",
     "COMPANYNAME",
     "PREFIX",
 }
-
 
 def extract_text_using_tika(file_path):
     parsed_file = tika_parser.from_file(file_path)
@@ -122,12 +121,16 @@ def transform_chunk(model_results, chunk):
         replaced_text = chunk[start_index:end_index]
         res = ""
 
-        if replaced_text in mapDict:
-            res = mapDict[replaced_text]
+        if (any(char.isdigit() for char in replaced_text) and numericRegex.regexCheck(replaced_text)):
+            res = CustomFaker.alter_random_digits(replaced_text)
+
         else:
-            method = getattr(module, method_name)
-            res = method()
-            mapDict[str(replaced_text)] = str(res)
+            if replaced_text in mapDict:
+                res = mapDict[replaced_text]
+            else:
+                method = getattr(module, method_name)
+                res = method()
+                mapDict[str(replaced_text)] = str(res)
 
         if isFirstRun:
             modified_chunk = chunk[:start_index] + str(res)

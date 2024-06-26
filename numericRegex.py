@@ -23,16 +23,27 @@ def validate_account_number(text):
     pattern = r'\b[0-9]{10,12}\b'
     return bool(re.search(pattern, text))
 
+
+def regexCheck(text):
+    if(validate_credit_card(text) or  validate_social_security_number(text) or validate_phone_number(text) or validate_account_number(text)):
+        return True
+    else:
+        return False
+
+
+
+
 # Example usage:
 #text = "Your Visa card number is 4111-1111-1111-1111 and your SSN is 123-45-6789. You can reach me at (123) 456-7890."
 
-print(validate_credit_card("4123-4567-8910-1119"))            # Should return True
-print(validate_social_security_number("123-45-6789")) # Should return True
-print(validate_phone_number("(123) 456-7890"))           # Should return True
-print(validate_account_number("12"))         # Should return False (no account number in text)
+# print(validate_credit_card("4123-4567-8910-1119"))            # Should return True
+# print(validate_social_security_number("123-45-6789")) # Should return True
+# print(validate_phone_number("(123) 456-7890"))           # Should return True
+# print(validate_account_number("12"))         # Should return False (no account number in text)
 
 
 # one function which does not match any name in faker
 # if multiple entity_group ->
 # original->fake
 # original->if no fake function, generate with new custom faker function
+
