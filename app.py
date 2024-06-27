@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, render_template, send_file
 from werkzeug.utils import secure_filename
 from tika import parser as tika_parser
 from presidio_analyzer import AnalyzerEngine
+from docx_utils import get_html_from_docx, extractText, export_to_docx
 
 import importlib
 import requests
@@ -181,9 +182,15 @@ def get_file():
 
 
 def preprocess_file(file_path):
-    text = extract_text_using_tika(file_path)
-    chunks = split_text_into_chunks(text)
-    return chunks
+    if file_path.endswith('.docx'):
+        html_content = get_html_from_docx(file_path)
+        text = extractText(html_content)
+        chunks = split_text_into_chunks(text)
+        return chunks
+    else:
+        text = extract_text_using_tika(file_path)
+        chunks = split_text_into_chunks(text)
+        return chunks
 
 
 @app.route("/upload", methods=["POST", "GET"])
@@ -210,7 +217,10 @@ def upload_file():
             matchSequence = f'"(?<=[^a-zA-Z])({key})(?=[^a-zA-Z])"gm'
             modified_content = re.sub(matchSequence, mapDict[key], modified_content)
 
-        temp_file_path, mime_type = export_to_original(modified_content, filepath)
+        if filepath.endswith('.docx') or filepath.endswith('.doc'):
+            temp_file_path, mime_type = export_to_docx(filepath, mapDict, UPLOAD_FOLDER)
+        else:
+            temp_file_path, mime_type = export_to_original(modified_content, filepath)
 
         return send_file(temp_file_path, mimetype=mime_type, as_attachment=True)
 
