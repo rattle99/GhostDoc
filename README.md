@@ -1,4 +1,4 @@
-# zlhacks
+# GhostDoc
 
 ## Instructions
 
