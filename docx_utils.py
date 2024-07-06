@@ -64,9 +64,8 @@ def replace_substrings(main_string, replacements):
 
     """
     # pattern = re.compile("|".join(re.escape(key) for key in replacements.keys()))
-    pattern = re.compile(
-        r"\b(" + "|".join(re.escape(key) for key in replacements.keys()) + r")\b"
-    )
+    pattern = re.compile(r"\b(" + "|".join(
+        re.escape(key) for key in replacements.keys()) + r")\b")
 
     # Function to replace matched substrings using the dictionary
     def replace_match(match):
@@ -131,7 +130,8 @@ def export_to_docx(original_file_path, mapDict, uploadFolder):
 
     """
     original_ext = original_file_path.rsplit(".", 1)[-1].lower()
-    temp_file = secure_filename("modified_" + os.path.basename(original_file_path))
+    temp_file = secure_filename("modified_" +
+                                os.path.basename(original_file_path))
     temp_file_path = os.path.join(uploadFolder, temp_file)
 
     html_content = get_html_from_docx(original_file_path)
@@ -169,9 +169,8 @@ def add_hyperlink(paragraph, url, text):
     part = paragraph.part
     r_id = part.relate_to(
         url,
-        qn(
-            "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink"
-        ),
+        qn("http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink"
+           ),
         is_external=True,
     )
 

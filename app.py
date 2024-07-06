@@ -21,7 +21,6 @@ from docx_utils import get_html_from_docx
 app = Flask(__name__)
 analyzer = AnalyzerEngine()
 
-
 mapDict = {}
 UPLOAD_FOLDER = "./uploads"
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
@@ -103,9 +102,9 @@ def presidio_model(current_chunk):
     :param current_chunk:
 
     """
-    analyzer_results = analyzer.analyze(
-        text=current_chunk, entities=PRESIDIO_ENTITIES, language="en"
-    )
+    analyzer_results = analyzer.analyze(text=current_chunk,
+                                        entities=PRESIDIO_ENTITIES,
+                                        language="en")
     chunk_result = []
 
     for result in analyzer_results:
@@ -163,9 +162,8 @@ def transform_chunk(model_results, chunk):
         replaced_text = chunk[start_index:end_index]
         res = ""
 
-        if any(char.isdigit() for char in replaced_text) and numericRegex.regexCheck(
-            replaced_text
-        ):
+        if any(char.isdigit() for char in
+               replaced_text) and numericRegex.regexCheck(replaced_text):
             res = CustomFaker.alter_random_digits(replaced_text)
 
         else:
@@ -183,9 +181,8 @@ def transform_chunk(model_results, chunk):
             space = ""
             if prev_index == start_index:
                 space = " "
-            modified_chunk = (
-                modified_chunk + space + chunk[prev_index:start_index] + str(res)
-            )
+            modified_chunk = (modified_chunk + space +
+                              chunk[prev_index:start_index] + str(res))
         prev_index = end_index
 
     modified_chunk = modified_chunk + chunk[prev_index:] + " "
@@ -201,7 +198,8 @@ def export_to_original(modified_text, original_file_path):
 
     """
     original_ext = original_file_path.rsplit(".", 1)[-1].lower()
-    temp_file = secure_filename("modified_" + os.path.basename(original_file_path))
+    temp_file = secure_filename("modified_" +
+                                os.path.basename(original_file_path))
     temp_file_path = os.path.join(app.config["UPLOAD_FOLDER"], temp_file)
 
     with open(temp_file_path, "w", encoding="utf-8") as f:
@@ -260,9 +258,8 @@ def upload_file():
         for chunk in chunks:
             pretrained_model_output = pretrained_model(chunk)
             presidio_model_output = presidio_model(chunk)
-            result_set = combine_model_results(
-                pretrained_model_output, presidio_model_output
-            )
+            result_set = combine_model_results(pretrained_model_output,
+                                               presidio_model_output)
             modified_chunk = transform_chunk(result_set, chunk)
             modified_chunks_list.append(modified_chunk)
 
@@ -270,14 +267,19 @@ def upload_file():
 
         for key in mapDict:
             matchSequence = f'"(?<=[^a-zA-Z])({key})(?=[^a-zA-Z])"gm'
-            modified_content = re.sub(matchSequence, mapDict[key], modified_content)
+            modified_content = re.sub(matchSequence, mapDict[key],
+                                      modified_content)
 
         if filepath.endswith(".docx") or filepath.endswith(".doc"):
-            temp_file_path, mime_type = export_to_docx(filepath, mapDict, UPLOAD_FOLDER)
+            temp_file_path, mime_type = export_to_docx(filepath, mapDict,
+                                                       UPLOAD_FOLDER)
         else:
-            temp_file_path, mime_type = export_to_original(modified_content, filepath)
+            temp_file_path, mime_type = export_to_original(
+                modified_content, filepath)
 
-        return send_file(temp_file_path, mimetype=mime_type, as_attachment=True)
+        return send_file(temp_file_path,
+                         mimetype=mime_type,
+                         as_attachment=True)
 
 
 if __name__ == "__main__":
