@@ -15,6 +15,11 @@ from werkzeug.utils import secure_filename
 
 
 def get_html_from_docx(file_path):
+    """
+
+    :param file_path: 
+
+    """
     # Parse the DOCX file
     parsed = parser.from_file(file_path, xmlContent=True)
 
@@ -25,9 +30,19 @@ def get_html_from_docx(file_path):
 
 
 def extractText(html_content):
+    """
+
+    :param html_content: 
+
+    """
     soup = BeautifulSoup(html_content, "html.parser")
 
     def getText(element):
+        """
+
+        :param element: 
+
+        """
         if isinstance(element, NavigableString):
             return str(element)
         elif isinstance(element, Tag):
@@ -40,6 +55,12 @@ def extractText(html_content):
 
 
 def replace_substrings(main_string, replacements):
+    """
+
+    :param main_string: 
+    :param replacements: 
+
+    """
     # pattern = re.compile("|".join(re.escape(key) for key in replacements.keys()))
     pattern = re.compile(
         r"\b(" + "|".join(re.escape(key) for key in replacements.keys()) + r")\b"
@@ -47,6 +68,11 @@ def replace_substrings(main_string, replacements):
 
     # Function to replace matched substrings using the dictionary
     def replace_match(match):
+        """
+
+        :param match: 
+
+        """
         return replacements[match.group(0)]
 
     # Use sub method to replace all matches in one go
@@ -55,10 +81,21 @@ def replace_substrings(main_string, replacements):
 
 
 def modify_html_content(mapDict, html_content):
+    """
+
+    :param mapDict: 
+    :param html_content: 
+
+    """
     print(len(mapDict))
     soup = BeautifulSoup(html_content, "html.parser")
 
     def iterate_html(element):
+        """
+
+        :param element: 
+
+        """
         if isinstance(element, NavigableString):
             # print(element.string)
             # print(replace_substrings(element.string, mapDict))
@@ -84,6 +121,13 @@ def modify_html_content(mapDict, html_content):
 
 
 def export_to_docx(original_file_path, mapDict, uploadFolder):
+    """
+
+    :param original_file_path: 
+    :param mapDict: 
+    :param uploadFolder: 
+
+    """
     original_ext = original_file_path.rsplit(".", 1)[-1].lower()
     temp_file = secure_filename("modified_" + os.path.basename(original_file_path))
     temp_file_path = os.path.join(uploadFolder, temp_file)
@@ -95,6 +139,11 @@ def export_to_docx(original_file_path, mapDict, uploadFolder):
 
 
 def extract_embedded_images(docx_file):
+    """
+
+    :param docx_file: 
+
+    """
     embedded_images = {}
 
     with ZipFile(docx_file, "r") as docx:
@@ -107,6 +156,13 @@ def extract_embedded_images(docx_file):
 
 
 def add_hyperlink(paragraph, url, text):
+    """
+
+    :param paragraph: 
+    :param url: 
+    :param text: 
+
+    """
     # This function adds a hyperlink to a paragraph.
     part = paragraph.part
     r_id = part.relate_to(
@@ -138,9 +194,22 @@ def add_hyperlink(paragraph, url, text):
 
 
 def add_html_to_docx(html_content, doc, embedded_images):
+    """
+
+    :param html_content: 
+    :param doc: 
+    :param embedded_images: 
+
+    """
     soup = BeautifulSoup(html_content, "html.parser")
 
     def add_element_to_paragraph(element, paragraph):
+        """
+
+        :param element: 
+        :param paragraph: 
+
+        """
         if isinstance(element, str):
             paragraph.add_run(element)
         elif element.name == "b":
@@ -177,6 +246,12 @@ def add_html_to_docx(html_content, doc, embedded_images):
                 print(f"Error adding image ({img_url}): {e}")
 
     def add_elements_to_doc(elements, doc):
+        """
+
+        :param elements: 
+        :param doc: 
+
+        """
         for element in elements:
             if element.name == "p":
                 paragraph = doc.add_paragraph()
@@ -194,6 +269,13 @@ def add_html_to_docx(html_content, doc, embedded_images):
 
 
 def html_to_docx(original_file_path, html_content, output_file):
+    """
+
+    :param original_file_path: 
+    :param html_content: 
+    :param output_file: 
+
+    """
     # Create a new Document
     doc = Document()
 

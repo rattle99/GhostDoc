@@ -35,11 +35,21 @@ MODEL_EXCLUSION_LIST = {
 
 
 def extract_text_using_tika(file_path):
+    """
+
+    :param file_path: 
+
+    """
     parsed_file = tika_parser.from_file(file_path)
     return parsed_file.get("content", "")
 
 
 def split_text_into_chunks(text):
+    """
+
+    :param text: 
+
+    """
     sentences = text.split(".")
 
     chunk_list = []
@@ -61,6 +71,11 @@ def split_text_into_chunks(text):
 
 
 def pretrained_model(current_chunk):
+    """
+
+    :param current_chunk: 
+
+    """
     URL = "http://localhost:5000/pii"
     payload = {"text": current_chunk}
     result = requests.post(URL, json=payload, verify=False)
@@ -77,6 +92,11 @@ def pretrained_model(current_chunk):
 
 
 def presidio_model(current_chunk):
+    """
+
+    :param current_chunk: 
+
+    """
     analyzer_results = analyzer.analyze(
         text=current_chunk, entities=PRESIDIO_ENTITIES, language="en"
     )
@@ -97,6 +117,12 @@ def presidio_model(current_chunk):
 
 
 def combine_model_results(pretrained_result, presidio_result):
+    """
+
+    :param pretrained_result: 
+    :param presidio_result: 
+
+    """
     result_set = []
 
     for entity in pretrained_result["response"]:
@@ -111,6 +137,12 @@ def combine_model_results(pretrained_result, presidio_result):
 
 
 def transform_chunk(model_results, chunk):
+    """
+
+    :param model_results: 
+    :param chunk: 
+
+    """
     module_name = "CustomFaker"
     module = importlib.import_module(module_name)
     modified_chunk = ""
@@ -156,6 +188,12 @@ def transform_chunk(model_results, chunk):
 
 
 def export_to_original(modified_text, original_file_path):
+    """
+
+    :param modified_text: 
+    :param original_file_path: 
+
+    """
     original_ext = original_file_path.rsplit(".", 1)[-1].lower()
     temp_file = secure_filename("modified_" + os.path.basename(original_file_path))
     temp_file_path = os.path.join(app.config["UPLOAD_FOLDER"], temp_file)
@@ -172,6 +210,7 @@ def export_to_original(modified_text, original_file_path):
 
 
 def get_file():
+    """ """
     if "file" not in request.files:
         return jsonify({"error": "No file part"})
 
@@ -186,6 +225,11 @@ def get_file():
 
 
 def preprocess_file(file_path):
+    """
+
+    :param file_path: 
+
+    """
     if file_path.endswith(".docx"):
         html_content = get_html_from_docx(file_path)
         text = extractText(html_content)
@@ -199,6 +243,7 @@ def preprocess_file(file_path):
 
 @app.route("/upload", methods=["POST", "GET"])
 def upload_file():
+    """ """
     if request.method == "GET":
         return render_template("upload.html")
     else:
