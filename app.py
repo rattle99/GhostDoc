@@ -29,7 +29,7 @@ MODEL_EXCLUSION_LIST = {
     "PHONENUMBER",
     "COMPANYNAME",
     "PREFIX",
-    "NEARBYGPSCOORDINATE"
+    "NEARBYGPSCOORDINATE",
 }
 
 
@@ -124,7 +124,9 @@ def transform_chunk(model_results, chunk):
         replaced_text = chunk[start_index:end_index]
         res = ""
 
-        if (any(char.isdigit() for char in replaced_text) and numericRegex.regexCheck(replaced_text)):
+        if any(char.isdigit() for char in replaced_text) and numericRegex.regexCheck(
+            replaced_text
+        ):
             res = CustomFaker.alter_random_digits(replaced_text)
 
         else:
@@ -143,8 +145,7 @@ def transform_chunk(model_results, chunk):
             if prev_index == start_index:
                 space = " "
             modified_chunk = (
-                modified_chunk + space +
-                chunk[prev_index:start_index] + str(res)
+                modified_chunk + space + chunk[prev_index:start_index] + str(res)
             )
         prev_index = end_index
 
@@ -155,8 +156,7 @@ def transform_chunk(model_results, chunk):
 
 def export_to_original(modified_text, original_file_path):
     original_ext = original_file_path.rsplit(".", 1)[-1].lower()
-    temp_file = secure_filename(
-        "modified_" + os.path.basename(original_file_path))
+    temp_file = secure_filename("modified_" + os.path.basename(original_file_path))
     temp_file_path = os.path.join(app.config["UPLOAD_FOLDER"], temp_file)
 
     with open(temp_file_path, "w", encoding="utf-8") as f:
@@ -185,7 +185,7 @@ def get_file():
 
 
 def preprocess_file(file_path):
-    if file_path.endswith('.docx'):
+    if file_path.endswith(".docx"):
         html_content = get_html_from_docx(file_path)
         text = extractText(html_content)
         chunks = split_text_into_chunks(text)
@@ -218,15 +218,12 @@ def upload_file():
 
         for key in mapDict:
             matchSequence = f'"(?<=[^a-zA-Z])({key})(?=[^a-zA-Z])"gm'
-            modified_content = re.sub(
-                matchSequence, mapDict[key], modified_content)
+            modified_content = re.sub(matchSequence, mapDict[key], modified_content)
 
-        if filepath.endswith('.docx') or filepath.endswith('.doc'):
-            temp_file_path, mime_type = export_to_docx(
-                filepath, mapDict, UPLOAD_FOLDER)
+        if filepath.endswith(".docx") or filepath.endswith(".doc"):
+            temp_file_path, mime_type = export_to_docx(filepath, mapDict, UPLOAD_FOLDER)
         else:
-            temp_file_path, mime_type = export_to_original(
-                modified_content, filepath)
+            temp_file_path, mime_type = export_to_original(modified_content, filepath)
 
         return send_file(temp_file_path, mimetype=mime_type, as_attachment=True)
 
