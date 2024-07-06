@@ -12,14 +12,16 @@ import requests
 from zipfile import ZipFile
 from xml.etree.ElementTree import XML
 
+
 def get_html_from_docx(file_path):
     # Parse the DOCX file
     parsed = parser.from_file(file_path, xmlContent=True)
-    
+
     # Extract HTML content
     html_content = parsed.get('content')
-    
+
     return html_content
+
 
 def extractText(html_content):
     soup = BeautifulSoup(html_content, 'html.parser')
@@ -35,17 +37,20 @@ def extractText(html_content):
 
     return getText(soup)
 
+
 def replace_substrings(main_string, replacements):
     # pattern = re.compile("|".join(re.escape(key) for key in replacements.keys()))
-    pattern = re.compile(r"\b(" + "|".join(re.escape(key) for key in replacements.keys()) + r")\b")
-    
+    pattern = re.compile(r"\b(" + "|".join(re.escape(key)
+                         for key in replacements.keys()) + r")\b")
+
     # Function to replace matched substrings using the dictionary
     def replace_match(match):
         return replacements[match.group(0)]
-    
+
     # Use sub method to replace all matches in one go
     result = pattern.sub(replace_match, main_string)
     return result
+
 
 def modify_html_content(mapDict, html_content):
     print(len(mapDict))
@@ -75,9 +80,11 @@ def modify_html_content(mapDict, html_content):
     iterate_html(soup)
     return str(soup)
 
+
 def export_to_docx(original_file_path, mapDict, uploadFolder):
     original_ext = original_file_path.rsplit(".", 1)[-1].lower()
-    temp_file = secure_filename("modified_" + os.path.basename(original_file_path))
+    temp_file = secure_filename(
+        "modified_" + os.path.basename(original_file_path))
     temp_file_path = os.path.join(uploadFolder, temp_file)
 
     html_content = get_html_from_docx(original_file_path)
@@ -85,21 +92,24 @@ def export_to_docx(original_file_path, mapDict, uploadFolder):
     html_to_docx(original_file_path, modified_html_content, temp_file_path)
     return temp_file_path, "application/msword"
 
+
 def extract_embedded_images(docx_file):
     embedded_images = {}
-    
+
     with ZipFile(docx_file, 'r') as docx:
         for entry in docx.namelist():
             if entry.startswith('word/media/'):
                 image_data = docx.read(entry)
                 embedded_images[entry] = image_data
-    
+
     return embedded_images
+
 
 def add_hyperlink(paragraph, url, text):
     # This function adds a hyperlink to a paragraph.
     part = paragraph.part
-    r_id = part.relate_to(url, qn('http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink'), is_external=True)
+    r_id = part.relate_to(url, qn(
+        'http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink'), is_external=True)
 
     hyperlink = OxmlElement('w:hyperlink')
     hyperlink.set(qn('r:id'), r_id,)
@@ -116,6 +126,7 @@ def add_hyperlink(paragraph, url, text):
     hyperlink.append(new_run)
 
     paragraph._element.append(hyperlink)
+
 
 def add_html_to_docx(html_content, doc, embedded_images):
     soup = BeautifulSoup(html_content, 'html.parser')
@@ -172,15 +183,16 @@ def add_html_to_docx(html_content, doc, embedded_images):
 
     add_elements_to_doc(soup.body.contents, doc)
 
+
 def html_to_docx(original_file_path, html_content, output_file):
     # Create a new Document
     doc = Document()
 
     # Extract embedded images from DOCX
     embedded_images = extract_embedded_images(original_file_path)
-    
+
     # Add HTML content to the DOCX document
     add_html_to_docx(html_content, doc, embedded_images)
-    
+
     # Save the DOCX document
     doc.save(output_file)
