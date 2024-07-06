@@ -5,7 +5,9 @@ from xml.etree.ElementTree import XML
 from zipfile import ZipFile
 
 import requests
-from bs4 import BeautifulSoup, NavigableString, Tag
+from bs4 import BeautifulSoup
+from bs4 import NavigableString
+from bs4 import Tag
 from docx import Document
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn

@@ -3,14 +3,20 @@ import os
 import re
 
 import requests
-from flask import Flask, jsonify, render_template, request, send_file
+from flask import Flask
+from flask import jsonify
+from flask import render_template
+from flask import request
+from flask import send_file
 from presidio_analyzer import AnalyzerEngine
 from tika import parser as tika_parser
 from werkzeug.utils import secure_filename
 
 import CustomFaker
 import numericRegex
-from docx_utils import export_to_docx, extractText, get_html_from_docx
+from docx_utils import export_to_docx
+from docx_utils import extractText
+from docx_utils import get_html_from_docx
 
 app = Flask(__name__)
 analyzer = AnalyzerEngine()
