@@ -43,7 +43,7 @@ MODEL_EXCLUSION_LIST = {
 def extract_text_using_tika(file_path):
     """
 
-    :param file_path: 
+    :param file_path:
 
     """
     parsed_file = tika_parser.from_file(file_path)
@@ -53,7 +53,7 @@ def extract_text_using_tika(file_path):
 def split_text_into_chunks(text):
     """
 
-    :param text: 
+    :param text:
 
     """
     sentences = text.split(".")
@@ -79,7 +79,7 @@ def split_text_into_chunks(text):
 def pretrained_model(current_chunk):
     """
 
-    :param current_chunk: 
+    :param current_chunk:
 
     """
     URL = "http://localhost:5000/pii"
@@ -100,7 +100,7 @@ def pretrained_model(current_chunk):
 def presidio_model(current_chunk):
     """
 
-    :param current_chunk: 
+    :param current_chunk:
 
     """
     analyzer_results = analyzer.analyze(
@@ -125,8 +125,8 @@ def presidio_model(current_chunk):
 def combine_model_results(pretrained_result, presidio_result):
     """
 
-    :param pretrained_result: 
-    :param presidio_result: 
+    :param pretrained_result:
+    :param presidio_result:
 
     """
     result_set = []
@@ -145,8 +145,8 @@ def combine_model_results(pretrained_result, presidio_result):
 def transform_chunk(model_results, chunk):
     """
 
-    :param model_results: 
-    :param chunk: 
+    :param model_results:
+    :param chunk:
 
     """
     module_name = "CustomFaker"
@@ -196,8 +196,8 @@ def transform_chunk(model_results, chunk):
 def export_to_original(modified_text, original_file_path):
     """
 
-    :param modified_text: 
-    :param original_file_path: 
+    :param modified_text:
+    :param original_file_path:
 
     """
     original_ext = original_file_path.rsplit(".", 1)[-1].lower()
@@ -233,7 +233,7 @@ def get_file():
 def preprocess_file(file_path):
     """
 
-    :param file_path: 
+    :param file_path:
 
     """
     if file_path.endswith(".docx"):
