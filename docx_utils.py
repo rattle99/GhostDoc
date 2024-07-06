@@ -1,16 +1,17 @@
 import os
 import re
-from tika import parser
+from io import BytesIO
+from xml.etree.ElementTree import XML
+from zipfile import ZipFile
+
+import requests
 from bs4 import BeautifulSoup, NavigableString, Tag
-from werkzeug.utils import secure_filename
 from docx import Document
-from docx.shared import RGBColor
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
-from io import BytesIO
-import requests
-from zipfile import ZipFile
-from xml.etree.ElementTree import XML
+from docx.shared import RGBColor
+from tika import parser
+from werkzeug.utils import secure_filename
 
 
 def get_html_from_docx(file_path):
